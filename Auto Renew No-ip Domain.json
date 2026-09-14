@@ -1,0 +1,163 @@
+{
+  "name": "Auto Renew No-ip Domain",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "d484033a-2302-41f7-87c0-cbe637a3bb1d",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        672,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.1.100:3002/open",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "https://www.noip.com/confirm-host?n=JWokPPTX6Np2urbo87VTEOEPN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        976,
+        -176
+      ],
+      "id": "3316db40-9766-4182-99af-02670ef9e97b",
+      "name": "1. Ouvrir la page"
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "053ebe2a-9693-4d18-b1c9-b40276a466e2",
+      "name": "2. Attendre chargement",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        -176
+      ],
+      "webhookId": "fe6f9c84-38f4-4641-b2be-2c7fc9f63b0c"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.1.100:3002/confirm-noip",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1488,
+        -176
+      ],
+      "id": "585bc350-06bd-4114-87a4-2fef4b9c1bb1",
+      "name": "3. Cliquer Captcha + Soumettre"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-success",
+              "leftValue": "={{ $json.confirmedOnPage }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b6b1edce-bc32-4ad4-a9cd-2f029a0d9298",
+      "name": "4. Vérifier succès",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        -176
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "1. Ouvrir la page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Ouvrir la page": {
+      "main": [
+        [
+          {
+            "node": "2. Attendre chargement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Attendre chargement": {
+      "main": [
+        [
+          {
+            "node": "3. Cliquer Captcha + Soumettre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Cliquer Captcha + Soumettre": {
+      "main": [
+        [
+          {
+            "node": "4. Vérifier succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "934c9a87-5da3-4a42-a519-7d962aaa16d4",
+  "meta": {
+    "instanceId": "5230ad985c9e14ebcb11c4d003d9dfbe949ffd05562c76b99bef956d501bc193"
+  },
+  "nodeGroups": [],
+  "id": "zyifTTZyiRFiNMrG",
+  "tags": []
+}
