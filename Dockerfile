@@ -4,7 +4,7 @@ RUN apk add --no-cache \
     docker-cli \
     python3 \
     make \
-    curl
+    curl \
     g++
 
 WORKDIR /app
