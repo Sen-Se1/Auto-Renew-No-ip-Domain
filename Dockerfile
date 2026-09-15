@@ -1,19 +1,19 @@
 FROM node:22-alpine
 
+# Runtime tools
 RUN apk add --no-cache \
     docker-cli \
-    python3 \
-    make \
-    curl \
-    g++
+    curl
 
 WORKDIR /app
 
+# Install Node dependencies
 COPY package*.json ./
 
 RUN npm ci --omit=dev \
     && npm cache clean --force
 
+# Application
 COPY server.js .
 COPY scripts ./scripts
 

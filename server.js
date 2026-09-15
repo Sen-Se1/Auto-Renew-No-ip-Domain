@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const { chromium } = require("playwright");
+const { chromium } = require("playwright-core");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 
