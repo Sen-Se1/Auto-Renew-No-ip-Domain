@@ -1,63 +1,53 @@
 #!/bin/bash
 
-CHROMIUM_NAME="chromium"
-CDP_NAME="chromium-cdp"
-
-CHROMIUM_IMAGE="linuxserver/chromium:version-6ae43f81@sha256:da269d40b655eb25ca0cd17c87f2e8e34b5b21f3e3eb14143746e40c62cb6951"
+LIGHTPANDA_NAME="lightpanda"
+LIGHTPANDA_IMAGE="lightpanda/browser:nightly"
 
 SERVER_IP="192.168.1.100"
 
 echo "======================================"
-echo "Starting Chromium"
+echo "Starting Lightpanda"
 echo "======================================"
 
-# Remove old containers
-docker rm -f "$CDP_NAME" 2>/dev/null
-docker rm -f "$CHROMIUM_NAME" 2>/dev/null
+# Remove old container
+docker rm -f "$LIGHTPANDA_NAME" 2>/dev/null
 
 # --------------------------------------------------
-# Start Chromium
+# Start Lightpanda (CDP server binds directly, no
+# separate socat bridge needed like with Chromium)
 # --------------------------------------------------
 
 docker run -d \
-    --name "$CHROMIUM_NAME" \
-    --hostname "$CHROMIUM_NAME" \
+    --name "$LIGHTPANDA_NAME" \
+    --hostname "$LIGHTPANDA_NAME" \
     --restart unless-stopped \
-    -p 3001:3001 \
+    --privileged \
     -p 9222:9222 \
-    -p 9223:9223 \
-    --shm-size 1gb \
-    -e "CHROME_CLI=--remote-debugging-port=9222 --remote-debugging-address=0.0.0.0" \
-    -e "PGID=1000" \
-    -e "PUID=1000" \
-    -e "TZ=Etc/UTC" \
-    --memory 7794m \
-    "$CHROMIUM_IMAGE"
+    "$LIGHTPANDA_IMAGE"
 
 if [ $? -ne 0 ]; then
-    echo "ERROR: Failed to start Chromium."
+    echo "ERROR: Failed to start Lightpanda."
     exit 1
 fi
 
 echo
-echo "Chromium container started."
+echo "Lightpanda container started."
 echo
-
 
 # --------------------------------------------------
 # Wait for container
 # --------------------------------------------------
 
-echo "Waiting for Chromium container..."
+echo "Waiting for Lightpanda container..."
 
 while true; do
 
     STATUS=$(docker inspect \
         -f '{{.State.Status}}' \
-        "$CHROMIUM_NAME" 2>/dev/null)
+        "$LIGHTPANDA_NAME" 2>/dev/null)
 
     if [ "$STATUS" = "running" ]; then
-        echo "Chromium container is running."
+        echo "Lightpanda container is running."
         break
     fi
 
@@ -66,66 +56,33 @@ done
 
 
 # --------------------------------------------------
-# Show Chromium logs
+# Show Lightpanda logs
 # --------------------------------------------------
 
 echo
 echo "======================================"
-echo "Chromium logs"
+echo "Lightpanda logs"
 echo "======================================"
-
-sleep 5
-
-docker logs "$CHROMIUM_NAME"
-
-
-# --------------------------------------------------
-# Start CDP bridge
-# --------------------------------------------------
-
-echo
-echo "======================================"
-echo "Starting CDP bridge"
-echo "======================================"
-
-docker run -d \
-    --name "$CDP_NAME" \
-    --network "container:$CHROMIUM_NAME" \
-    --restart unless-stopped \
-    alpine/socat:latest \
-    TCP-LISTEN:9223,fork,reuseaddr,bind=0.0.0.0 \
-    TCP:127.0.0.1:9222
-
-if [ $? -ne 0 ]; then
-    echo "ERROR: Failed to start CDP bridge."
-    exit 1
-fi
-
-echo
-echo "CDP bridge started."
-echo
-
-
-# --------------------------------------------------
-# Wait a little for CDP
-# --------------------------------------------------
 
 sleep 3
 
+docker logs "$LIGHTPANDA_NAME"
+
 
 # --------------------------------------------------
-# Final CDP test
+# CDP test
 # --------------------------------------------------
 
+echo
 echo "======================================"
 echo "Testing CDP"
 echo "======================================"
 
 echo
-echo "curl http://$SERVER_IP:9223/json/version"
+echo "curl http://$SERVER_IP:9222/json/version"
 echo
 
-curl "http://$SERVER_IP:9223/json/version"
+curl "http://$SERVER_IP:9222/json/version"
 
 if [ $? -eq 0 ]; then
     echo
@@ -141,8 +98,8 @@ else
     echo "======================================"
 
     echo
-    echo "CDP container logs:"
-    docker logs "$CDP_NAME"
+    echo "Lightpanda container logs:"
+    docker logs "$LIGHTPANDA_NAME"
 
     exit 1
 fi

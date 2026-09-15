@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3002;
-const CDP_URL = process.env.CDP_URL || "http://192.168.1.100:9223";
+const CDP_URL = process.env.CDP_URL || "http://192.168.1.100:9222";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const WIT_AI_TOKEN = process.env.WIT_AI_TOKEN || "";
 const START_BROWSER_SCRIPT =
