@@ -8,7 +8,7 @@ services:
 
     environment:
       PORT: 3002
-      CDP_URL: http://192.168.1.100:9223
+      CDP_URL: http://192.168.1.100:9222
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       WIT_AI_TOKEN: ${WIT_AI_TOKEN}
 
