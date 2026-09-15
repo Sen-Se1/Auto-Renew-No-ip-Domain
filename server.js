@@ -17,7 +17,7 @@ const START_BROWSER_SCRIPT =
   process.env.START_BROWSER_SCRIPT || "/app/scripts/start-browser.sh";
 const REMOVE_BROWSER_SCRIPT =
   process.env.REMOVE_BROWSER_SCRIPT || "/app/scripts/remove-browser.sh";
- 
+
 let browser = null;
 let page = null;
 
