@@ -4,6 +4,8 @@ const { chromium } = require("playwright");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 
+const execFileAsync = promisify(execFile);
+
 const app = express();
 app.use(express.json());
 
