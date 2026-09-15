@@ -1,6 +1,7 @@
 .git
 .github
 .gitignore
+.env
 README.md
 Dockerfile
 docker-compose.yml

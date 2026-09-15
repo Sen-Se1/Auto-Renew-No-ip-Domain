@@ -1,8 +1,14 @@
+require("dotenv").config();
 const express = require("express");
 const { chromium } = require("playwright");
 
 const app = express();
 app.use(express.json());
+
+const PORT = process.env.PORT || 3002;
+const CDP_URL = process.env.CDP_URL || "http://192.168.1.100:9223";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const WIT_AI_TOKEN = process.env.WIT_AI_TOKEN || "";
 
 let browser = null;
 let page = null;
@@ -43,8 +49,8 @@ async function humanClick(page, target) {
 
 async function getPage() {
   if (!browser) {
-    console.log("Connecting to Chromium...");
-    browser = await chromium.connectOverCDP("http://192.168.1.100:9223");
+    console.log(`Connecting to Chromium (${CDP_URL})...`);
+    browser = await chromium.connectOverCDP(CDP_URL);
     console.log("Connected to Chromium");
   }
   const contexts = browser.contexts();
@@ -104,10 +110,9 @@ async function solveRecaptchaAudio(page, label = "") {
     let text = "";
 
     // ── Source 1 : Google Gemini API (Ultra rapide & gratuit) ─────────────
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
     if (GEMINI_API_KEY) {
       // Liste des modèles Gemini par ordre de priorité
-      const models = ["gemini-3.6-flash","gemini-2.5-flash"];
+      const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
       for (const model of models) {
         try {
           const geminiRes = await fetch(
@@ -167,12 +172,12 @@ async function solveRecaptchaAudio(page, label = "") {
     }
 
     // ── Source 3 : Wit.ai API Speech ─────────────────────────────
-    if (!text) {
+    if (!text && WIT_AI_TOKEN) {
       try {
         const witRes = await fetch("https://api.wit.ai/speech", {
           method: "POST",
           headers: {
-            "Authorization": "Bearer 377A6N7S5WT3RSHX6SHP5BOHPWXZJ24K",
+            "Authorization": `Bearer ${WIT_AI_TOKEN}`,
             "Content-Type": "audio/mpeg"
           },
           body: Buffer.from(audioBuffer)
@@ -408,6 +413,53 @@ async function isOnConfirmPage(p) {
   return false;
 }
 
+/** Vérifie si on est sur la page d'upsell "Before Confirming your Hostname" (bouton "No thanks, just renew my free hostname") */
+async function isOnRenewUpsellPage(p) {
+  const selectors = [
+    'a:has-text("No thanks, just renew my free hostname")',
+    'button:has-text("No thanks, just renew my free hostname")',
+    '*:has-text("No thanks, just renew my free hostname")',
+    'text="No thanks, just renew my free hostname"'
+  ];
+  for (const sel of selectors) {
+    try {
+      const visible = await p.locator(sel).first().isVisible({ timeout: 3000 }).catch(() => false);
+      if (visible) return true;
+    } catch { /* continuer */ }
+  }
+  return false;
+}
+
+/** Clique sur "No thanks, just renew my free hostname" de façon humaine */
+async function clickRenewButton(p) {
+  const renewSelectors = [
+    'a:has-text("No thanks, just renew my free hostname")',
+    'button:has-text("No thanks, just renew my free hostname")',
+    '*:has-text("No thanks, just renew my free hostname")',
+  ];
+
+  for (const sel of renewSelectors) {
+    try {
+      const btn = p.locator(sel).first();
+      const visible = await btn.isVisible({ timeout: 3000 }).catch(() => false);
+      if (!visible) continue;
+
+      console.log(`✅ Bouton renew trouvé : "${sel}"`);
+      const btnBox = await btn.boundingBox().catch(() => null);
+      if (btnBox) {
+        await humanMouseMove(p, btnBox.x - 100, btnBox.y - 30);
+        await randomDelay(400, 800);
+        await humanMouseMove(p, btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
+        await randomDelay(200, 400);
+      }
+      await humanClick(p, btn);
+      console.log('🖱️  "No thanks, just renew my free hostname" cliqué !');
+      return true;
+    } catch { /* prochain */ }
+  }
+  return false;
+}
+
 /** Clique sur "Confirm your hostname now" de façon humaine */
 async function clickConfirmButton(p) {
   const confirmSelectors = [
@@ -478,14 +530,37 @@ app.post("/confirm-noip", async (req, res) => {
     // DÉTECTION : sur quelle page sommes-nous ?
     // ══════════════════════════════════════════════════════
 
-    const onConfirmPage = await isOnConfirmPage(p);
+    const onRenewUpsellPage = await isOnRenewUpsellPage(p);
+    const onConfirmPage = !onRenewUpsellPage && (await isOnConfirmPage(p));
 
     let captcha1Solved = false;
     let page1Submitted = false;
     let captcha2Solved = false;
     let page2Submitted = false;
 
-    if (onConfirmPage) {
+    if (onRenewUpsellPage) {
+      // ──────────────────────────────────────────────────
+      // CAS C : Page Upsell "Before Confirming your Hostname"
+      //   → cliquer sur "No thanks, just renew my free hostname"
+      //   → redirect vers page captcha
+      // ──────────────────────────────────────────────────
+      console.log("\n━━━━━━ CAS C : Page Upsell (No thanks, just renew my free hostname) ━━━━━━");
+
+      page1Submitted = await clickRenewButton(p);
+
+      console.log("\n⏳ Attente de la navigation vers la page de captcha...");
+      await p
+        .waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 })
+        .catch(() => {});
+      await randomDelay(1500, 2500);
+
+      console.log("\n━━━━━━ PAGE CAPTCHA ━━━━━━");
+      captcha2Solved = await solveCaptchaOnPage(p, "AFTER_RENEW");
+
+      await randomDelay(800, 1500);
+      page2Submitted = await clickSubmitButton(p, "AFTER_RENEW");
+
+    } else if (onConfirmPage) {
       // ──────────────────────────────────────────────────
       // CAS A : Page "Confirm your hostname now"
       //   → hCAPTCHA + bouton confirm → redirect → captcha page
@@ -545,40 +620,56 @@ app.post("/confirm-noip", async (req, res) => {
     }
 
     // ══════════════════════════════════════════════════════
-    // Vérification finale
+    // Vérification finale (Page "Update Successful")
     // ══════════════════════════════════════════════════════
 
     await randomDelay(3000, 5000);
     await p.waitForLoadState("domcontentloaded").catch(() => {});
 
+    // Détection spécifique selon les éléments de la capture d'écran :
+    // 1. "Update Successful" (titre principal)
+    // 2. "Thank you for confirming your hostname"
+    // 3. Bouton "Take Me To My Account"
+    const isUpdateSuccessfulHeader = await p.locator('text="Update Successful"').isVisible({ timeout: 5000 }).catch(() => false);
+    const isThankYouText = await p.locator('text*="Thank you for confirming your hostname"').isVisible({ timeout: 2000 }).catch(() => false);
+    const isTakeMeToAccountBtn = await p.locator('a:has-text("Take Me To My Account"), button:has-text("Take Me To My Account")').isVisible({ timeout: 2000 }).catch(() => false);
+
     const finalUrl = p.url();
     const pageText = await p.textContent("body").catch(() => "");
     const lower = pageText.toLowerCase();
-    const success =
-      lower.includes("success") ||
-      lower.includes("confirmed") ||
-      lower.includes("updated") ||
-      lower.includes("active") ||
-      finalUrl.includes("success") ||
-      finalUrl.includes("confirmed");
 
-    const mode = onConfirmPage ? "CAS A (2 pages)" : "CAS B (captcha direct)";
+    const success =
+      isUpdateSuccessfulHeader ||
+      isThankYouText ||
+      isTakeMeToAccountBtn ||
+      lower.includes("update successful") ||
+      lower.includes("thank you for confirming") ||
+      lower.includes("has been updated successfully");
+
+    const mode = onRenewUpsellPage ? "CAS C (Upsell + Captcha)" : onConfirmPage ? "CAS A (Confirm + Captcha)" : "CAS B (Captcha direct)";
     console.log(`\n📊 Résultat [${mode}] :`);
-    if (onConfirmPage) {
-      console.log(`   Page 1 – Captcha  : ${captcha1Solved ? "✅" : "⚠️"}`);
-      console.log(`   Page 1 – Confirm  : ${page1Submitted ? "✅" : "❌"}`);
+    if (onRenewUpsellPage) {
+      console.log(`   Page 1 – Renew Click : ${page1Submitted ? "✅" : "❌"}`);
+    } else if (onConfirmPage) {
+      console.log(`   Page 1 – Captcha     : ${captcha1Solved ? "✅" : "⚠️"}`);
+      console.log(`   Page 1 – Confirm     : ${page1Submitted ? "✅" : "❌"}`);
     }
-    console.log(`   Page 2 – Captcha  : ${captcha2Solved ? "✅" : "ℹ️  Aucun"}`);
-    console.log(`   Page 2 – Submit   : ${page2Submitted ? "✅" : "ℹ️  Aucun"}`);
-    console.log(`   Succès final      : ${success ? "✅" : "⚠️  Incertain"}`);
-    console.log(`   URL finale        : ${finalUrl}`);
+    console.log(`   Page Captcha – Résolu: ${captcha2Solved ? "✅" : "ℹ️  Auto/Form"}`);
+    console.log(`   Page Captcha – Submit: ${page2Submitted ? "✅" : "ℹ️  Auto/Form"}`);
+    console.log(`   Vérification Succès   : ${success ? "✅ UPDATE SUCCESSFUL" : "⚠️  Non confirmé"}`);
+    console.log(`   URL finale           : ${finalUrl}`);
 
     res.json({
-      success: true,
+      success,
       mode,
-      page1: onConfirmPage ? { captchaSolved: captcha1Solved, confirmClicked: page1Submitted } : null,
+      page1: onRenewUpsellPage ? { renewClicked: page1Submitted } : (onConfirmPage ? { captchaSolved: captcha1Solved, confirmClicked: page1Submitted } : null),
       page2: { captchaSolved: captcha2Solved, submitClicked: page2Submitted },
       confirmedOnPage: success,
+      detectedElements: {
+        updateSuccessfulHeader: isUpdateSuccessfulHeader,
+        thankYouText: isThankYouText,
+        takeMeToAccountBtn: isTakeMeToAccountBtn
+      },
       finalUrl,
     });
   } catch (error) {
@@ -593,11 +684,11 @@ app.post("/confirm-noip", async (req, res) => {
 // Démarrage du serveur
 // ─────────────────────────────────────────────
 
-app.listen(3002, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log("=================================");
   console.log("Playwright API");
-  console.log("Listening on port 3002");
-  console.log("Chromium CDP: 192.168.1.100:9223");
+  console.log(`Listening on port ${PORT}`);
+  console.log(`Chromium CDP: ${CDP_URL}`);
   console.log("Endpoints:");
   console.log("  POST /open         – ouvre une URL");
   console.log("  GET  /status       – état de la connexion");
