@@ -1,7 +1,11 @@
 #!/bin/sh
 
-echo "Stopping Lightpanda..."
+echo "Stopping Chromium CDP..."
 
-docker rm -f lightpanda 2>/dev/null || true
+docker rm -f chromium-cdp 2>/dev/null || true
 
-echo "Lightpanda container removed."
+echo "Stopping Chromium..."
+
+docker rm -f chromium 2>/dev/null || true
+
+echo "Chromium containers removed."

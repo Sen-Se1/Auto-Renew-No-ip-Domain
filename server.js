@@ -10,14 +10,14 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3002;
-const CDP_URL = process.env.CDP_URL || "http://192.168.1.100:9222";
+const CDP_URL = process.env.CDP_URL || "http://192.168.1.100:9223";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const WIT_AI_TOKEN = process.env.WIT_AI_TOKEN || "";
 const START_BROWSER_SCRIPT =
   process.env.START_BROWSER_SCRIPT || "/app/scripts/start-browser.sh";
 const REMOVE_BROWSER_SCRIPT =
   process.env.REMOVE_BROWSER_SCRIPT || "/app/scripts/remove-browser.sh";
-
+ 
 let browser = null;
 let page = null;
 
@@ -88,13 +88,11 @@ async function removeBrowserContainers() {
 }
 
 // ─────────────────────────────────────────────
-// Wait for Browser CDP
+// Wait for Chromium CDP
 // ─────────────────────────────────────────────
 
 async function waitForBrowser(maxAttempts = 30) {
-  const wsUrl = CDP_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
-
-  console.log(`\n⏳ Waiting for Browser CDP: ${wsUrl}`);
+  console.log(`\n⏳ Waiting for Chromium CDP: ${CDP_URL}`);
 
   for (let i = 1; i <= maxAttempts; i++) {
     let testBrowser = null;
@@ -102,11 +100,9 @@ async function waitForBrowser(maxAttempts = 30) {
     try {
       console.log(`   Checking CDP... ${i}/${maxAttempts}`);
 
-      testBrowser = await chromium.connectOverCDP(wsUrl, {
-        timeout: 5000,
-      });
+      testBrowser = await chromium.connectOverCDP(CDP_URL);
 
-      console.log("✅ Browser CDP is ready");
+      console.log("✅ Chromium CDP is ready");
 
       await testBrowser.close();
 
@@ -118,14 +114,12 @@ async function waitForBrowser(maxAttempts = 30) {
         } catch {}
       }
 
-      console.log(`   CDP not ready: ${error.message}`);
-
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
   throw new Error(
-    `Browser CDP did not become available after ${maxAttempts} seconds: ${wsUrl}`,
+    `Chromium CDP did not become available after ${maxAttempts} seconds: ${CDP_URL}`,
   );
 }
 
@@ -165,26 +159,15 @@ async function humanClick(page, target) {
 
 async function getPage() {
   if (!browser) {
-    const wsUrl = CDP_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
-
-    console.log(`Connecting to Lightpanda (${wsUrl})...`);
-
-    browser = await chromium.connectOverCDP(wsUrl);
-
-    console.log("Connected to Lightpanda");
+    console.log(`Connecting to Chromium (${CDP_URL})...`);
+    browser = await chromium.connectOverCDP(CDP_URL);
+    console.log("Connected to Chromium");
   }
-
   const contexts = browser.contexts();
-
-  if (contexts.length === 0) {
-    throw new Error("No browser context found");
-  }
-
+  if (contexts.length === 0) throw new Error("No browser context found");
   const context = contexts[0];
   const pages = context.pages();
-
   page = pages.length > 0 ? pages[0] : await context.newPage();
-
   return page;
 }
 
@@ -660,7 +643,7 @@ async function isOnRenewUpsellPage(p) {
     'button:has-text("No thanks, just renew my free hostname")',
     '*:has-text("No thanks, just renew my free hostname")',
     'text="No thanks, just renew my free hostname"',
-    'text="Your Action Required: Confirm Your Hostname"',
+    'text="Your Action Required: Confirm Your Hostname"'
   ];
   for (const sel of selectors) {
     try {
@@ -706,7 +689,7 @@ async function clickRenewButton(p) {
         await randomDelay(200, 400);
       }
       await humanClick(p, btn);
-      console.log("🖱️  Bouton de confirmation cliqué !");
+      console.log('🖱️  Bouton de confirmation cliqué !');
       return true;
     } catch {
       /* prochain */
