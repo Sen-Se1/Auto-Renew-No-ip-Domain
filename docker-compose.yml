@@ -1,0 +1,21 @@
+services:
+  noip-api:
+    build: .
+    container_name: noip-api
+
+    ports:
+      - "3002:3002"
+
+    environment:
+      PORT: 3002
+      CDP_URL: http://192.168.1.100:9223
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      WIT_AI_TOKEN: ${WIT_AI_TOKEN}
+
+      START_BROWSER_SCRIPT: /app/scripts/start-browser.sh
+      REMOVE_BROWSER_SCRIPT: /app/scripts/remove-browser.sh
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    restart: unless-stopped
