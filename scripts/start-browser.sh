@@ -15,6 +15,13 @@ docker rm -f "$LIGHTPANDA_NAME" 2>/dev/null
 # --------------------------------------------------
 # Start Lightpanda (CDP server binds directly, no
 # separate socat bridge needed like with Chromium)
+#
+# --advertise-host is required: without it, Lightpanda
+# advertises 127.0.0.1 in webSocketDebuggerUrl (the
+# /json/version response), which only works for clients
+# on the exact same network namespace. Any client running
+# in a different container (like the noip-api container)
+# can't reach that and will hang/timeout.
 # --------------------------------------------------
 
 docker run -d \
@@ -23,7 +30,8 @@ docker run -d \
     --restart unless-stopped \
     --privileged \
     -p 9222:9222 \
-    "$LIGHTPANDA_IMAGE"
+    "$LIGHTPANDA_IMAGE" \
+    serve --host 0.0.0.0 --port 9222 --advertise-host "$SERVER_IP"
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to start Lightpanda."

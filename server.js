@@ -88,11 +88,11 @@ async function removeBrowserContainers() {
 }
 
 // ─────────────────────────────────────────────
-// Wait for Chromium CDP
+// Wait for Browser CDP
 // ─────────────────────────────────────────────
 
 async function waitForBrowser(maxAttempts = 30) {
-  console.log(`\n⏳ Waiting for Chromium CDP: ${CDP_URL}`);
+  console.log(`\n⏳ Waiting for Browser CDP: ${CDP_URL}`);
 
   for (let i = 1; i <= maxAttempts; i++) {
     let testBrowser = null;
@@ -100,9 +100,9 @@ async function waitForBrowser(maxAttempts = 30) {
     try {
       console.log(`   Checking CDP... ${i}/${maxAttempts}`);
 
-      testBrowser = await chromium.connectOverCDP(CDP_URL);
+      testBrowser = await browser.connectOverCDP(CDP_URL);
 
-      console.log("✅ Chromium CDP is ready");
+      console.log("✅ Browser CDP is ready");
 
       await testBrowser.close();
 
@@ -119,7 +119,7 @@ async function waitForBrowser(maxAttempts = 30) {
   }
 
   throw new Error(
-    `Chromium CDP did not become available after ${maxAttempts} seconds: ${CDP_URL}`,
+    `Browser CDP did not become available after ${maxAttempts} seconds: ${CDP_URL}`,
   );
 }
 
