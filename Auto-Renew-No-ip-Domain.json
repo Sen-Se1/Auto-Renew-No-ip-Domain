@@ -1,6 +1,54 @@
 {
-  "name": "Browser Test - Playwright",
+  "name": "Auto-Renew-No-ip-Domain",
   "nodes": [
+    {
+      "parameters": {
+        "chatId": "7496005292",
+        "text": "=✅ *Confirmation No-IP Réussie !*\n\nLe nom d'hôte *sense1.ddns.net* a été renouvelé avec succès.\n\n📍 *Mode :* {{ $('3. Cliquer Captcha + Soumettre1').item.json.mode }}\n🌐 *URL Finale :* {{ $('3. Cliquer Captcha + Soumettre1').item.json.finalUrl }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "9c6dff26-277f-49e8-9ea5-faf0e1522390",
+      "name": "5. Notification Telegram (Succès)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        160
+      ],
+      "webhookId": "c8e9dfc6-ff3f-4d50-a71a-02b938ee2666",
+      "credentials": {
+        "telegramApi": {
+          "id": "9sD7mjXWFWfl246Y",
+          "name": "Telegram houssem"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "7496005292",
+        "text": "=❌ *Échec de Confirmation No-IP !*\n\nLe renouvellement du nom d'hôte *sense1.ddns.net* a échoué ou reste incertain.\n\n📍 *Mode :* {{ $('3. Cliquer Captcha + Soumettre1').item.json.mode }}\n🌐 *URL Finale :* {{ $('3. Cliquer Captcha + Soumettre1').item.json.finalUrl }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "bdbdeb24-a28b-4a40-ad62-ac63e77ced38",
+      "name": "5. Notification Telegram (Échec)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        368
+      ],
+      "webhookId": "645d4077-d2db-4576-905e-9ac9a2a1719f",
+      "credentials": {
+        "telegramApi": {
+          "id": "9sD7mjXWFWfl246Y",
+          "name": "Telegram houssem"
+        }
+      }
+    },
     {
       "parameters": {
         "conditions": {
@@ -25,60 +73,14 @@
         },
         "options": {}
       },
-      "id": "b6b1edce-bc32-4ad4-a9cd-2f029a0d9298",
-      "name": "4. Vérifier succès",
+      "id": "eab52992-d055-49dc-aa6e-a0db4b77b50a",
+      "name": "4. Vérifier succès1",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1744,
-        -176
+        224,
+        272
       ]
-    },
-    {
-      "parameters": {
-        "chatId": "VOTRE_CHAT_ID",
-        "text": "=✅ *Confirmation No-IP Réussie !*\n\nLe nom d'hôte *sense1.ddns.net* a été renouvelé avec succès.\n\n📍 *Mode :* {{ $('3. Cliquer Captcha + Soumettre').item.json.mode }}\n🌐 *URL Finale :* {{ $('3. Cliquer Captcha + Soumettre').item.json.finalUrl }}",
-        "additionalFields": {
-          "parse_mode": "Markdown"
-        }
-      },
-      "id": "f8e9d0c1-b2a3-4567-8901-234567890def",
-      "name": "5. Notification Telegram (Succès)",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        2000,
-        -280
-      ],
-      "credentials": {
-        "telegramApi": {
-          "id": "telegram-cred",
-          "name": "Telegram Bot"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "chatId": "VOTRE_CHAT_ID",
-        "text": "=❌ *Échec de Confirmation No-IP !*\n\nLe renouvellement du nom d'hôte *sense1.ddns.net* a échoué ou reste incertain.\n\n📍 *Mode :* {{ $('3. Cliquer Captcha + Soumettre').item.json.mode }}\n🌐 *URL Finale :* {{ $('3. Cliquer Captcha + Soumettre').item.json.finalUrl }}",
-        "additionalFields": {
-          "parse_mode": "Markdown"
-        }
-      },
-      "id": "a9b8c7d6-e5f4-3210-fedc-ba9876543210",
-      "name": "5. Notification Telegram (Échec)",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        2000,
-        -80
-      ],
-      "credentials": {
-        "telegramApi": {
-          "id": "telegram-cred",
-          "name": "Telegram Bot"
-        }
-      }
     },
     {
       "parameters": {
@@ -89,24 +91,24 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1488,
-        -176
+        -32,
+        272
       ],
-      "id": "585bc350-06bd-4114-87a4-2fef4b9c1bb1",
-      "name": "3. Cliquer Captcha + Soumettre"
+      "id": "7a986741-da92-4a07-b50b-3ec204b13da9",
+      "name": "3. Cliquer Captcha + Soumettre1"
     },
     {
       "parameters": {
         "amount": 3,
         "unit": "seconds"
       },
-      "id": "053ebe2a-9693-4d18-b1c9-b40276a466e2",
-      "name": "2. Attendre chargement",
+      "id": "0e6af280-d809-43bc-942b-220ad92e2786",
+      "name": "2. Attendre chargement1",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        1232,
-        -176
+        -288,
+        272
       ],
       "webhookId": "fe6f9c84-38f4-4641-b2be-2c7fc9f63b0c"
     },
@@ -128,11 +130,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        976,
-        -176
+        -544,
+        272
       ],
-      "id": "3316db40-9766-4182-99af-02670ef9e97b",
-      "name": "1. Ouvrir la page"
+      "id": "feec606e-b497-4b36-9977-0d1a2ff9eabf",
+      "name": "1. Ouvrir la page1"
     },
     {
       "parameters": {
@@ -145,30 +147,30 @@
         },
         "simple": false,
         "filters": {
-          "sender": "notice-34180125@noip.com",
-          "subject": "ACTION REQUIRED: sense1.ddns.net is Expiring Soon"
+          "q": "subject:\"ACTION REQUIRED: sense1.ddns.net is Expiring Soon\"",
+          "sender": "notice-34180125@noip.com"
         },
         "options": {}
       },
-      "id": "1295a250-cfc0-4165-89f3-59a6626ed42e",
-      "name": "Gmail Trigger (No-IP Email)",
+      "id": "5e7ebbcf-c3b0-41dc-b4ae-93fd961ab935",
+      "name": "Gmail Trigger (No-IP Email)1",
       "type": "n8n-nodes-base.gmailTrigger",
       "typeVersion": 1,
       "position": [
-        656,
-        -176
+        -864,
+        272
       ],
       "credentials": {
         "gmailOAuth2": {
           "id": "IwjWjxLpm22JwtsA",
-          "name": "Gmail account"
+          "name": "Gmail account houssem"
         }
       }
     }
   ],
   "pinData": {},
   "connections": {
-    "4. Vérifier succès": {
+    "4. Vérifier succès1": {
       "main": [
         [
           {
@@ -186,44 +188,44 @@
         ]
       ]
     },
-    "3. Cliquer Captcha + Soumettre": {
+    "3. Cliquer Captcha + Soumettre1": {
       "main": [
         [
           {
-            "node": "4. Vérifier succès",
+            "node": "4. Vérifier succès1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "2. Attendre chargement": {
+    "2. Attendre chargement1": {
       "main": [
         [
           {
-            "node": "3. Cliquer Captcha + Soumettre",
+            "node": "3. Cliquer Captcha + Soumettre1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "1. Ouvrir la page": {
+    "1. Ouvrir la page1": {
       "main": [
         [
           {
-            "node": "2. Attendre chargement",
+            "node": "2. Attendre chargement1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gmail Trigger (No-IP Email)": {
+    "Gmail Trigger (No-IP Email)1": {
       "main": [
         [
           {
-            "node": "1. Ouvrir la page",
+            "node": "1. Ouvrir la page1",
             "type": "main",
             "index": 0
           }
@@ -237,7 +239,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "268600c4-2f87-4e89-bd91-3f99734a6e4d",
+  "versionId": "d20be5b6-8f5e-4fe5-a517-8a32fbc99782",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "5230ad985c9e14ebcb11c4d003d9dfbe949ffd05562c76b99bef956d501bc193"
