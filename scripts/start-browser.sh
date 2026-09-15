@@ -31,7 +31,7 @@ docker run -d \
     --privileged \
     -p 9222:9222 \
     "$LIGHTPANDA_IMAGE" \
-    serve --host 0.0.0.0 --port 9222 --advertise-host "$SERVER_IP"
+    lightpanda serve --host 0.0.0.0 --port 9222 --advertise-host "$SERVER_IP"
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to start Lightpanda."
