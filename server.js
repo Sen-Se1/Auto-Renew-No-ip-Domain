@@ -92,7 +92,9 @@ async function removeBrowserContainers() {
 // ─────────────────────────────────────────────
 
 async function waitForBrowser(maxAttempts = 30) {
-  console.log(`\n⏳ Waiting for Browser CDP: ${CDP_URL}`);
+  const wsUrl = CDP_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+
+  console.log(`\n⏳ Waiting for Browser CDP: ${wsUrl}`);
 
   for (let i = 1; i <= maxAttempts; i++) {
     let testBrowser = null;
@@ -100,7 +102,9 @@ async function waitForBrowser(maxAttempts = 30) {
     try {
       console.log(`   Checking CDP... ${i}/${maxAttempts}`);
 
-      testBrowser = await browser.connectOverCDP(CDP_URL);
+      testBrowser = await chromium.connectOverCDP(wsUrl, {
+        timeout: 5000,
+      });
 
       console.log("✅ Browser CDP is ready");
 
@@ -114,12 +118,14 @@ async function waitForBrowser(maxAttempts = 30) {
         } catch {}
       }
 
+      console.log(`   CDP not ready: ${error.message}`);
+
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
   throw new Error(
-    `Browser CDP did not become available after ${maxAttempts} seconds: ${CDP_URL}`,
+    `Browser CDP did not become available after ${maxAttempts} seconds: ${wsUrl}`,
   );
 }
 
@@ -159,15 +165,26 @@ async function humanClick(page, target) {
 
 async function getPage() {
   if (!browser) {
-    console.log(`Connecting to Chromium (${CDP_URL})...`);
-    browser = await chromium.connectOverCDP(CDP_URL);
-    console.log("Connected to Chromium");
+    const wsUrl = CDP_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+
+    console.log(`Connecting to Lightpanda (${wsUrl})...`);
+
+    browser = await chromium.connectOverCDP(wsUrl);
+
+    console.log("Connected to Lightpanda");
   }
+
   const contexts = browser.contexts();
-  if (contexts.length === 0) throw new Error("No browser context found");
+
+  if (contexts.length === 0) {
+    throw new Error("No browser context found");
+  }
+
   const context = contexts[0];
   const pages = context.pages();
+
   page = pages.length > 0 ? pages[0] : await context.newPage();
+
   return page;
 }
 
@@ -643,7 +660,7 @@ async function isOnRenewUpsellPage(p) {
     'button:has-text("No thanks, just renew my free hostname")',
     '*:has-text("No thanks, just renew my free hostname")',
     'text="No thanks, just renew my free hostname"',
-    'text="Your Action Required: Confirm Your Hostname"'
+    'text="Your Action Required: Confirm Your Hostname"',
   ];
   for (const sel of selectors) {
     try {
@@ -689,7 +706,7 @@ async function clickRenewButton(p) {
         await randomDelay(200, 400);
       }
       await humanClick(p, btn);
-      console.log('🖱️  Bouton de confirmation cliqué !');
+      console.log("🖱️  Bouton de confirmation cliqué !");
       return true;
     } catch {
       /* prochain */
