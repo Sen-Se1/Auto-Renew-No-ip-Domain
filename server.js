@@ -634,13 +634,16 @@ async function isOnConfirmPage(p) {
   return false;
 }
 
-/** Vérifie si on est sur la page d'upsell "Before Confirming your Hostname" (bouton "No thanks, just renew my free hostname") */
+/** Vérifie si on est sur la page d'upsell "Before Confirming your Hostname" (bouton "No thanks, just renew my free hostname" ou "Confirm My Hostname") */
 async function isOnRenewUpsellPage(p) {
   const selectors = [
+    'a:has-text("Confirm My Hostname")',
+    'button:has-text("Confirm My Hostname")',
     'a:has-text("No thanks, just renew my free hostname")',
     'button:has-text("No thanks, just renew my free hostname")',
     '*:has-text("No thanks, just renew my free hostname")',
     'text="No thanks, just renew my free hostname"',
+    'text="Your Action Required: Confirm Your Hostname"'
   ];
   for (const sel of selectors) {
     try {
@@ -657,9 +660,11 @@ async function isOnRenewUpsellPage(p) {
   return false;
 }
 
-/** Clique sur "No thanks, just renew my free hostname" de façon humaine */
+/** Clique sur "Confirm My Hostname" ou "No thanks, just renew my free hostname" de façon humaine */
 async function clickRenewButton(p) {
   const renewSelectors = [
+    'a:has-text("Confirm My Hostname")',
+    'button:has-text("Confirm My Hostname")',
     'a:has-text("No thanks, just renew my free hostname")',
     'button:has-text("No thanks, just renew my free hostname")',
     '*:has-text("No thanks, just renew my free hostname")',
@@ -671,7 +676,7 @@ async function clickRenewButton(p) {
       const visible = await btn.isVisible({ timeout: 3000 }).catch(() => false);
       if (!visible) continue;
 
-      console.log(`✅ Bouton renew trouvé : "${sel}"`);
+      console.log(`✅ Bouton renew/confirm trouvé : "${sel}"`);
       const btnBox = await btn.boundingBox().catch(() => null);
       if (btnBox) {
         await humanMouseMove(p, btnBox.x - 100, btnBox.y - 30);
@@ -684,7 +689,7 @@ async function clickRenewButton(p) {
         await randomDelay(200, 400);
       }
       await humanClick(p, btn);
-      console.log('🖱️  "No thanks, just renew my free hostname" cliqué !');
+      console.log('🖱️  Bouton de confirmation cliqué !');
       return true;
     } catch {
       /* prochain */
