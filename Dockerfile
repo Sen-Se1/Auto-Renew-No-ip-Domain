@@ -1,7 +1,10 @@
 FROM node:22-alpine
 
-# Docker CLI so scripts can control the host Docker daemon
-RUN apk add --no-cache docker-cli
+RUN apk add --no-cache \
+    docker-cli \
+    python3 \
+    make \
+    g++
 
 WORKDIR /app
 
@@ -14,8 +17,6 @@ COPY server.js .
 COPY scripts ./scripts
 
 RUN chmod +x /app/scripts/*.sh
-
-USER node
 
 EXPOSE 3002
 
