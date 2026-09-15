@@ -11,10 +11,13 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^5.2.1",
-    "dotenv": "^17.4.2",
     "child_process": "^1.0.2",
-    "util": "^0.12.5",
-    "playwright": "^1.63.0"
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "playwright": "^1.63.0",
+    "util": "^0.12.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
