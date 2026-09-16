@@ -47,7 +47,7 @@
       "credentials": {
         "sshPassword": {
           "id": "fNCwDK6kQKJAFs8m",
-          "name": "SSH Password account (Host)"
+          "name": "SSH Password account (Shs-Pi)"
         }
       }
     },
@@ -65,7 +65,7 @@
       "typeVersion": 1.2,
       "position": [
         -64,
-        -96
+        0
       ],
       "webhookId": "645d4077-d2db-4576-905e-9ac9a2a1719f",
       "credentials": {
@@ -127,8 +127,8 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        400,
-        -384
+        608,
+        -400
       ],
       "webhookId": "fe6f9c84-38f4-4641-b2be-2c7fc9f63b0c"
     },
@@ -150,8 +150,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        176,
-        -384
+        384,
+        -400
       ],
       "id": "feec606e-b497-4b36-9977-0d1a2ff9eabf",
       "name": "5. Open Page"
@@ -165,8 +165,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        640,
-        -384
+        848,
+        -400
       ],
       "id": "7a986741-da92-4a07-b50b-3ec204b13da9",
       "name": "7. Click Captcha + Submit"
@@ -200,8 +200,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        880,
-        -384
+        1088,
+        -400
       ]
     },
     {
@@ -217,8 +217,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1168,
-        -288
+        1376,
+        -304
       ],
       "webhookId": "645d4077-d2db-4576-905e-9ac9a2a1719f",
       "credentials": {
@@ -241,8 +241,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1168,
-        -496
+        1376,
+        -512
       ],
       "webhookId": "c8e9dfc6-ff3f-4d50-a71a-02b938ee2666",
       "credentials": {
@@ -277,16 +277,205 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-success",
+              "leftValue": "={{ $('2. Waka up shs').item.json.stdout }}",
+              "rightValue": "=Checking if PC (192.168.1.100) is online...\nPC is already awake. No action needed.",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e91f74cf-3c41-4f0b-b679-d893e6d9d557",
+      "name": "5. Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-success",
+              "leftValue": "={{ $('2. Waka up shs').item.json.stdout }}",
+              "rightValue": "=Checking if PC (192.168.1.100) is online...\nPC is already awake. No action needed.",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "beef745d-13a8-4ee9-9380-7dc59730e5d4",
+      "name": "10. Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-success",
+              "leftValue": "={{ $('2. Waka up shs').item.json.stdout }}",
+              "rightValue": "=Checking if PC (192.168.1.100) is online...\nPC is already awake. No action needed.",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d6480112-c87a-4d5e-ae34-e920834e1af5",
+      "name": "10. Check  Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "command": "touch /mnt/srv/scripts/shutdown.trigger"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        496,
+        48
+      ],
+      "id": "f2cd51ad-8e09-4206-8bfb-de105a9885e0",
+      "name": "6. Shutdown Server",
+      "credentials": {
+        "sshPassword": {
+          "id": "mE9D20yxnvQBwRUX",
+          "name": "SSH Password account (Shs)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "touch /mnt/srv/scripts/shutdown.trigger"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        1936,
+        -208
+      ],
+      "id": "d1ca7589-5fc2-46a7-811b-8c18ac1de9e0",
+      "name": "11. Shutdown  Server",
+      "credentials": {
+        "sshPassword": {
+          "id": "mE9D20yxnvQBwRUX",
+          "name": "SSH Password account (Shs)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "touch /mnt/srv/scripts/shutdown.trigger"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        1936,
+        -464
+      ],
+      "id": "12d1a48b-0e75-4dad-a513-0f426b4e3d6b",
+      "name": "11. Shutdown Server",
+      "credentials": {
+        "sshPassword": {
+          "id": "mE9D20yxnvQBwRUX",
+          "name": "SSH Password account (Shs)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-success",
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "=Checking if PC (192.168.1.100) is online...\nPC is already awake. No action needed.",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "1c388e68-6969-445b-ad3d-39d97cc5cb2c",
+      "name": "4. Check   Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        -272
+      ]
+    },
+    {
+      "parameters": {
         "amount": 90,
         "unit": "seconds"
       },
       "id": "49118706-488b-465a-af36-1c8e591a4e9e",
-      "name": "4. Wait for Loading",
+      "name": "4,1. Wait for Loading",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        -48,
-        -384
+        144,
+        -224
       ],
       "webhookId": "fe6f9c84-38f4-4641-b2be-2c7fc9f63b0c"
     }
@@ -319,7 +508,7 @@
       "main": [
         [
           {
-            "node": "4. Wait for Loading",
+            "node": "4. Check   Success",
             "type": "main",
             "index": 0
           }
@@ -395,7 +584,94 @@
         ]
       ]
     },
-    "4. Wait for Loading": {
+    "4. Telegram Notification (Failed)": {
+      "main": [
+        [
+          {
+            "node": "5. Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Check Success": {
+      "main": [
+        [],
+        [
+          {
+            "node": "6. Shutdown Server",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Telegram Notification (Failed)": {
+      "main": [
+        [
+          {
+            "node": "10. Check  Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Telegram Notification (Success)": {
+      "main": [
+        [
+          {
+            "node": "10. Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Check  Success": {
+      "main": [
+        [],
+        [
+          {
+            "node": "11. Shutdown  Server",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Check Success": {
+      "main": [
+        [],
+        [
+          {
+            "node": "11. Shutdown Server",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Check   Success": {
+      "main": [
+        [
+          {
+            "node": "5. Open Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "4,1. Wait for Loading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4,1. Wait for Loading": {
       "main": [
         [
           {
@@ -413,7 +689,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "9e25f27e-5c6e-4eae-baf2-a6a8024f0295",
+  "versionId": "c0ad7410-ab0a-4f49-bd02-1946427d836f",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "5230ad985c9e14ebcb11c4d003d9dfbe949ffd05562c76b99bef956d501bc193"
