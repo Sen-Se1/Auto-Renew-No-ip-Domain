@@ -23,7 +23,6 @@ docker run -d \
     --name "$CHROMIUM_NAME" \
     --hostname "$CHROMIUM_NAME" \
     --restart unless-stopped \
-    -p 3001:3001 \
     -p 9222:9222 \
     -p 9223:9223 \
     --shm-size 1gb \

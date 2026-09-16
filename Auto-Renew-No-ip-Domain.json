@@ -3,21 +3,71 @@
   "nodes": [
     {
       "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "subject:\"ACTION REQUIRED: sense1.ddns.net is Expiring Soon\"",
+          "sender": "notice-34180125@noip.com"
+        },
+        "options": {}
+      },
+      "id": "5e7ebbcf-c3b0-41dc-b4ae-93fd961ab935",
+      "name": "1. Gmail Trigger (No-IP Email)1",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        -208
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IwjWjxLpm22JwtsA",
+          "name": "Gmail account houssem"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "/mnt/srv/scripts/wake-pc.sh"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -208
+      ],
+      "id": "c5bc2973-a841-4d41-886a-716b180065dd",
+      "name": "2. Waka up shs",
+      "credentials": {
+        "sshPassword": {
+          "id": "fNCwDK6kQKJAFs8m",
+          "name": "SSH Password account (Host)"
+        }
+      }
+    },
+    {
+      "parameters": {
         "chatId": "7496005292",
-        "text": "=✅ *Confirmation No-IP Réussie !*\n\nLe nom d'hôte *sense1.ddns.net* a été renouvelé avec succès.\n\n📍 *Mode :* {{ $('3. Cliquer Captcha + Soumettre1').item.json.mode }}\n🌐 *URL Finale :* {{ $('3. Cliquer Captcha + Soumettre1').item.json.finalUrl }}",
+        "text": "=❌ *PC Wake-up Failed (Wake-on-LAN)!*\n\nUnable to verify PC *shs* (192.168.1.100) wake-up. No-IP renewal has been aborted.\n🖥️ *Machine:* `192.168.1.100`\n📋 *Script Output:* `{{ $json.stdout }}`\n",
         "additionalFields": {
           "parse_mode": "Markdown"
         }
       },
-      "id": "9c6dff26-277f-49e8-9ea5-faf0e1522390",
-      "name": "5. Notification Telegram (Succès)",
+      "id": "3bc6abda-52e7-4553-812d-6ce8261eb87f",
+      "name": "4. Telegram Notification (Failed)",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        480,
-        160
+        -64,
+        -96
       ],
-      "webhookId": "c8e9dfc6-ff3f-4d50-a71a-02b938ee2666",
+      "webhookId": "645d4077-d2db-4576-905e-9ac9a2a1719f",
       "credentials": {
         "telegramApi": {
           "id": "9sD7mjXWFWfl246Y",
@@ -27,27 +77,99 @@
     },
     {
       "parameters": {
-        "chatId": "7496005292",
-        "text": "=❌ *Échec de Confirmation No-IP !*\n\nLe renouvellement du nom d'hôte *sense1.ddns.net* a échoué ou reste incertain.\n\n📍 *Mode :* {{ $('3. Cliquer Captcha + Soumettre1').item.json.mode }}\n🌐 *URL Finale :* {{ $('3. Cliquer Captcha + Soumettre1').item.json.finalUrl }}",
-        "additionalFields": {
-          "parse_mode": "Markdown"
-        }
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-success",
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "=Checking if PC (192.168.1.100) is online...\nPC is already awake. No action needed.",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "53b2e3f9-3882-4a50-af32-05f1b8c7e07b",
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "=Checking if PC (192.168.1.100) is online...\nPC is offline. Sending Wake-on-LAN magic packet...\nSending magic packet to 192.168.1.255:9 with 2C:F0:5D:D9:4B:F0",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
       },
-      "id": "bdbdeb24-a28b-4a40-ad62-ac63e77ced38",
-      "name": "5. Notification Telegram (Échec)",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "id": "1d922a99-860a-42f6-a761-eafc20a7dccb",
+      "name": "3. Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
       "position": [
-        480,
-        368
+        -320,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "0e6af280-d809-43bc-942b-220ad92e2786",
+      "name": "6. Wait for Loading",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -384
       ],
-      "webhookId": "645d4077-d2db-4576-905e-9ac9a2a1719f",
-      "credentials": {
-        "telegramApi": {
-          "id": "9sD7mjXWFWfl246Y",
-          "name": "Telegram houssem"
-        }
-      }
+      "webhookId": "fe6f9c84-38f4-4641-b2be-2c7fc9f63b0c"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.1.100:3002/open",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $('2. Extract No-IP URL').item.json.confirmationUrl }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        176,
+        -384
+      ],
+      "id": "feec606e-b497-4b36-9977-0d1a2ff9eabf",
+      "name": "5. Open Page"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.1.100:3002/confirm-noip",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        640,
+        -384
+      ],
+      "id": "7a986741-da92-4a07-b50b-3ec204b13da9",
+      "name": "7. Click Captcha + Submit"
     },
     {
       "parameters": {
@@ -74,158 +196,210 @@
         "options": {}
       },
       "id": "eab52992-d055-49dc-aa6e-a0db4b77b50a",
-      "name": "4. Vérifier succès1",
+      "name": "8. Check Success",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        224,
-        272
+        880,
+        -384
       ]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "http://192.168.1.100:3002/confirm-noip",
-        "options": {}
+        "chatId": "7496005292",
+        "text": "=❌ *No-IP Confirmation Failed!*\n\nThe renewal of hostname *sense1.ddns.net* failed or remains uncertain.\n\n📍 *Mode:* {{ $('7. Click Captcha + Submit').item.json.mode }}\n🌐 *Final URL:* {{ $('7. Click Captcha + Submit').item.json.finalUrl }}\n",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "id": "bdbdeb24-a28b-4a40-ad62-ac63e77ced38",
+      "name": "9. Telegram Notification (Failed)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
       "position": [
-        -32,
-        272
+        1168,
+        -288
       ],
-      "id": "7a986741-da92-4a07-b50b-3ec204b13da9",
-      "name": "3. Cliquer Captcha + Soumettre1"
+      "webhookId": "645d4077-d2db-4576-905e-9ac9a2a1719f",
+      "credentials": {
+        "telegramApi": {
+          "id": "9sD7mjXWFWfl246Y",
+          "name": "Telegram houssem"
+        }
+      }
     },
     {
       "parameters": {
-        "amount": 3,
+        "chatId": "7496005292",
+        "text": "=✅ *No-IP Confirmation Successful!*\n\nThe hostname *sense1.ddns.net* has been renewed successfully.\n\n📍 *Mode:* {{ $('7. Click Captcha + Submit').item.json.mode }}\n🌐 *Final URL:* {{ $('7. Click Captcha + Submit').item.json.finalUrl }}\n",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "9c6dff26-277f-49e8-9ea5-faf0e1522390",
+      "name": "9. Telegram Notification (Success)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1168,
+        -496
+      ],
+      "webhookId": "c8e9dfc6-ff3f-4d50-a71a-02b938ee2666",
+      "credentials": {
+        "telegramApi": {
+          "id": "9sD7mjXWFWfl246Y",
+          "name": "Telegram houssem"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "94c18e11-c58d-4891-b433-5c55803a68e8",
+              "name": "confirmationUrl",
+              "value": "={{ ($json.text || $json.html).match(/https:\\/\\/www\\.noip\\.com\\/confirm-host[^\\s\"'>]+/)?.[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -784,
+        -208
+      ],
+      "id": "730c6ea7-e9b7-4cc7-95ee-288227357e95",
+      "name": "2. Extract No-IP URL"
+    },
+    {
+      "parameters": {
+        "amount": 90,
         "unit": "seconds"
       },
-      "id": "0e6af280-d809-43bc-942b-220ad92e2786",
-      "name": "2. Attendre chargement1",
+      "id": "49118706-488b-465a-af36-1c8e591a4e9e",
+      "name": "4. Wait for Loading",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        -288,
-        272
+        -48,
+        -384
       ],
       "webhookId": "fe6f9c84-38f4-4641-b2be-2c7fc9f63b0c"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "http://192.168.1.100:3002/open",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "url",
-              "value": "https://www.noip.com/confirm-host?n=JWokPPTX6Np2urbo87VTEOEPN"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -544,
-        272
-      ],
-      "id": "feec606e-b497-4b36-9977-0d1a2ff9eabf",
-      "name": "1. Ouvrir la page1"
-    },
-    {
-      "parameters": {
-        "pollTimes": {
-          "item": [
-            {
-              "mode": "everyMinute"
-            }
-          ]
-        },
-        "simple": false,
-        "filters": {
-          "q": "subject:\"ACTION REQUIRED: sense1.ddns.net is Expiring Soon\"",
-          "sender": "notice-34180125@noip.com"
-        },
-        "options": {}
-      },
-      "id": "5e7ebbcf-c3b0-41dc-b4ae-93fd961ab935",
-      "name": "Gmail Trigger (No-IP Email)1",
-      "type": "n8n-nodes-base.gmailTrigger",
-      "typeVersion": 1,
-      "position": [
-        -864,
-        272
-      ],
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "IwjWjxLpm22JwtsA",
-          "name": "Gmail account houssem"
-        }
-      }
     }
   ],
   "pinData": {},
   "connections": {
-    "4. Vérifier succès1": {
+    "1. Gmail Trigger (No-IP Email)1": {
       "main": [
         [
           {
-            "node": "5. Notification Telegram (Succès)",
+            "node": "2. Extract No-IP URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Waka up shs": {
+      "main": [
+        [
+          {
+            "node": "3. Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Check Success": {
+      "main": [
+        [
+          {
+            "node": "4. Wait for Loading",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "5. Notification Telegram (Échec)",
+            "node": "4. Telegram Notification (Failed)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "3. Cliquer Captcha + Soumettre1": {
+    "6. Wait for Loading": {
       "main": [
         [
           {
-            "node": "4. Vérifier succès1",
+            "node": "7. Click Captcha + Submit",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "2. Attendre chargement1": {
+    "5. Open Page": {
       "main": [
         [
           {
-            "node": "3. Cliquer Captcha + Soumettre1",
+            "node": "6. Wait for Loading",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "1. Ouvrir la page1": {
+    "7. Click Captcha + Submit": {
       "main": [
         [
           {
-            "node": "2. Attendre chargement1",
+            "node": "8. Check Success",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gmail Trigger (No-IP Email)1": {
+    "8. Check Success": {
       "main": [
         [
           {
-            "node": "1. Ouvrir la page1",
+            "node": "9. Telegram Notification (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "9. Telegram Notification (Failed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Extract No-IP URL": {
+      "main": [
+        [
+          {
+            "node": "2. Waka up shs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Wait for Loading": {
+      "main": [
+        [
+          {
+            "node": "5. Open Page",
             "type": "main",
             "index": 0
           }
@@ -233,13 +407,13 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "d20be5b6-8f5e-4fe5-a517-8a32fbc99782",
+  "versionId": "9e25f27e-5c6e-4eae-baf2-a6a8024f0295",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "5230ad985c9e14ebcb11c4d003d9dfbe949ffd05562c76b99bef956d501bc193"
