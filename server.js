@@ -616,8 +616,8 @@ app.get("/status", async (req, res) => {
 async function isOnConfirmPage(p) {
   const selectors = [
     'button:has-text("Confirm your hostname now")',
-    'input[value*="Confirm your hostname"]',
-    'a:has-text("Confirm your hostname")',
+    'input[value*="Confirm your hostname now"]',
+    'a:has-text("Confirm your hostname now")',
   ];
   for (const sel of selectors) {
     try {
