@@ -17,7 +17,7 @@ const START_BROWSER_SCRIPT =
   process.env.START_BROWSER_SCRIPT || "/app/scripts/start-browser.sh";
 const REMOVE_BROWSER_SCRIPT =
   process.env.REMOVE_BROWSER_SCRIPT || "/app/scripts/remove-browser.sh";
- 
+
 let browser = null;
 let page = null;
 
@@ -111,7 +111,7 @@ async function waitForBrowser(maxAttempts = 30) {
       if (testBrowser) {
         try {
           await testBrowser.close();
-        } catch {}
+        } catch { }
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -243,8 +243,8 @@ async function solveRecaptchaAudio(page, label = "") {
       // Liste des modèles Gemini par ordre de priorité
       const models = [
         "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-3.1-flash-lite"
       ];
       for (const model of models) {
         try {
@@ -308,7 +308,7 @@ async function solveRecaptchaAudio(page, label = "") {
           text = hfRes.text.trim();
           console.log(`🎯 [${label}] Transcrit via Whisper : "${text}"`);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // ── Source 3 : Wit.ai API Speech ─────────────────────────────
@@ -386,7 +386,7 @@ async function solveRecaptchaAudio(page, label = "") {
 async function solveCaptchaOnPage(p, label = "") {
   console.log(`\n🔍 [${label}] Recherche d'un captcha sur la page...`);
 
-  await p.waitForLoadState("networkidle").catch(() => {});
+  await p.waitForLoadState("networkidle").catch(() => { });
   await randomDelay(1000, 2000);
 
   // ── hCAPTCHA (priorité 1) ────────────────────────────────────────────
@@ -797,7 +797,7 @@ app.post("/confirm-noip", async (req, res) => {
           waitUntil: "domcontentloaded",
           timeout: 15000,
         })
-        .catch(() => {});
+        .catch(() => { });
 
       await randomDelay(1500, 2500);
 
@@ -832,7 +832,7 @@ app.post("/confirm-noip", async (req, res) => {
           waitUntil: "domcontentloaded",
           timeout: 15000,
         })
-        .catch(() => {});
+        .catch(() => { });
 
       await randomDelay(1500, 2500);
 
@@ -871,7 +871,7 @@ app.post("/confirm-noip", async (req, res) => {
 
     await randomDelay(3000, 5000);
 
-    await p.waitForLoadState("domcontentloaded").catch(() => {});
+    await p.waitForLoadState("domcontentloaded").catch(() => { });
 
     const isUpdateSuccessfulHeader = await p
       .locator('text="Update Successful"')
@@ -931,8 +931,7 @@ app.post("/confirm-noip", async (req, res) => {
     console.log(`   Page Captcha – Submit: ${page2Submitted ? "✅" : "ℹ️"}`);
 
     console.log(
-      `   Vérification Succès: ${
-        success ? "✅ UPDATE SUCCESSFUL" : "⚠️ Non confirmé"
+      `   Vérification Succès: ${success ? "✅ UPDATE SUCCESSFUL" : "⚠️ Non confirmé"
       }`,
     );
 
@@ -944,13 +943,13 @@ app.post("/confirm-noip", async (req, res) => {
 
       page1: onRenewUpsellPage
         ? {
-            renewClicked: page1Submitted,
-          }
+          renewClicked: page1Submitted,
+        }
         : onConfirmPage
           ? {
-              captchaSolved: captcha1Solved,
-              confirmClicked: page1Submitted,
-            }
+            captchaSolved: captcha1Solved,
+            confirmClicked: page1Submitted,
+          }
           : null,
 
       page2: {
