@@ -244,7 +244,7 @@ async function solveRecaptchaAudio(page, label = "") {
       const models = [
         "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
-        "gemini-3.1-flash-lite"
+        "gemini-3.1-flash-lite",
       ];
       for (const model of models) {
         try {
@@ -596,6 +596,23 @@ app.get("/status", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+// POST /confirm-noip  – séquence intelligente no-ip
+//
+//  DÉTECTION AUTOMATIQUE de la page courante :
+//
+//  CAS A – Page "Confirm hostname" (bouton visible) :
+//    1. Cocher hCAPTCHA
+//    2. Cliquer "Confirm your hostname now"
+//    → redirect → CAS B
+//
+//  CAS B – Page captcha directe (pas de bouton confirm) :
+//    1. Résoudre le captcha
+//    2. Soumettre si bouton présent
+//
+//  Le bot détecte automatiquement dans quel cas il est.
+// ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────────
 // Fonctions de détection et d'action pour les 3 CAS de première page
 // ─────────────────────────────────────────────
 
@@ -833,62 +850,38 @@ app.post("/confirm-noip", async (req, res) => {
       lower.includes("thank you for confirming") ||
       lower.includes("has been updated successfully");
 
-    const mode = onRenewUpsellPage
-      ? "CAS C (Upsell + Captcha)"
-      : onConfirmPage
-        ? "CAS A (Confirm + Captcha)"
-        : "CAS B (Captcha direct)";
+    const mode = pageCase.name;
 
     console.log(`\n📊 Résultat [${mode}] :`);
-
-    if (onRenewUpsellPage) {
-      console.log(`   Page 1 – Renew Click : ${page1Submitted ? "✅" : "❌"}`);
-    } else if (onConfirmPage) {
-      console.log(`   Page 1 – Captcha : ${captcha1Solved ? "✅" : "⚠️"}`);
-
-      console.log(`   Page 1 – Confirm : ${page1Submitted ? "✅" : "❌"}`);
-    }
-
+    console.log(`   Page 1 – Action Clic : ${page1Submitted ? "✅" : (pageCase.caseId === 0 ? "ℹ️ (N/A)" : "❌")}`);
     console.log(`   Page Captcha – Résolu: ${captcha2Solved ? "✅" : "ℹ️"}`);
-
     console.log(`   Page Captcha – Submit: ${page2Submitted ? "✅" : "ℹ️"}`);
-
     console.log(
       `   Vérification Succès: ${
         success ? "✅ UPDATE SUCCESSFUL" : "⚠️ Non confirmé"
       }`,
     );
-
     console.log(`   URL finale: ${finalUrl}`);
 
     const result = {
       success,
       mode,
-
-      page1: onRenewUpsellPage
-        ? {
-            renewClicked: page1Submitted,
-          }
-        : onConfirmPage
-          ? {
-              captchaSolved: captcha1Solved,
-              confirmClicked: page1Submitted,
-            }
-          : null,
-
+      page1: {
+        caseId: pageCase.caseId,
+        caseName: pageCase.name,
+        submitted: page1Submitted,
+        captchaSolved: captcha1Solved,
+      },
       page2: {
         captchaSolved: captcha2Solved,
         submitClicked: page2Submitted,
       },
-
       confirmedOnPage: success,
-
       detectedElements: {
         updateSuccessfulHeader: isUpdateSuccessfulHeader,
         thankYouText: isThankYouText,
         takeMeToAccountBtn: isTakeMeToAccountBtn,
       },
-
       finalUrl,
     };
 
