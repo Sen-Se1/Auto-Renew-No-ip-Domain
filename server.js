@@ -17,7 +17,7 @@ const START_BROWSER_SCRIPT =
   process.env.START_BROWSER_SCRIPT || "/app/scripts/start-browser.sh";
 const REMOVE_BROWSER_SCRIPT =
   process.env.REMOVE_BROWSER_SCRIPT || "/app/scripts/remove-browser.sh";
-
+ 
 let browser = null;
 let page = null;
 
@@ -111,7 +111,7 @@ async function waitForBrowser(maxAttempts = 30) {
       if (testBrowser) {
         try {
           await testBrowser.close();
-        } catch { }
+        } catch {}
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -308,7 +308,7 @@ async function solveRecaptchaAudio(page, label = "") {
           text = hfRes.text.trim();
           console.log(`🎯 [${label}] Transcrit via Whisper : "${text}"`);
         }
-      } catch (e) { }
+      } catch (e) {}
     }
 
     // ── Source 3 : Wit.ai API Speech ─────────────────────────────
@@ -386,7 +386,7 @@ async function solveRecaptchaAudio(page, label = "") {
 async function solveCaptchaOnPage(p, label = "") {
   console.log(`\n🔍 [${label}] Recherche d'un captcha sur la page...`);
 
-  await p.waitForLoadState("networkidle").catch(() => { });
+  await p.waitForLoadState("networkidle").catch(() => {});
   await randomDelay(1000, 2000);
 
   // ── hCAPTCHA (priorité 1) ────────────────────────────────────────────
@@ -596,143 +596,95 @@ app.get("/status", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// POST /confirm-noip  – séquence intelligente no-ip
-//
-//  DÉTECTION AUTOMATIQUE de la page courante :
-//
-//  CAS A – Page "Confirm hostname" (bouton visible) :
-//    1. Cocher hCAPTCHA
-//    2. Cliquer "Confirm your hostname now"
-//    → redirect → CAS B
-//
-//  CAS B – Page captcha directe (pas de bouton confirm) :
-//    1. Résoudre le captcha
-//    2. Soumettre si bouton présent
-//
-//  Le bot détecte automatiquement dans quel cas il est.
+// Fonctions de détection et d'action pour les 3 CAS de première page
 // ─────────────────────────────────────────────
 
-/** Vérifie si le bouton "Confirm your hostname now" est visible */
-async function isOnConfirmPage(p) {
-  const selectors = [
+/**
+ * Détecte quel bouton est présent sur la 1ère page :
+ *  - CAS 1 : "Confirm My Hostname"
+ *  - CAS 2 : "No thanks, just renew my free hostname"
+ *  - CAS 3 : "Confirm your hostname now"
+ *  - CAS 0 : Captcha direct (aucun de ces 3 boutons)
+ */
+async function detectFirstPageCase(p) {
+  const cas1Selectors = [
+    'a:has-text("Confirm My Hostname")',
+    'button:has-text("Confirm My Hostname")',
+  ];
+  const cas2Selectors = [
+    'a:has-text("No thanks, just renew my free hostname")',
+    'button:has-text("No thanks, just renew my free hostname")',
+    '*:has-text("No thanks, just renew my free hostname")',
+  ];
+  const cas3Selectors = [
     'button:has-text("Confirm your hostname now")',
-    'input[value*="Confirm your hostname now"]',
     'a:has-text("Confirm your hostname now")',
+    'input[value*="Confirm your hostname"]',
   ];
-  for (const sel of selectors) {
-    try {
-      const visible = await p
-        .locator(sel)
-        .first()
-        .isVisible({ timeout: 3000 })
-        .catch(() => false);
-      if (visible) return true;
-    } catch {
-      /* continuer */
+
+  // Test CAS 1
+  for (const sel of cas1Selectors) {
+    if (await p.locator(sel).first().isVisible({ timeout: 2000 }).catch(() => false)) {
+      return { caseId: 1, name: 'CAS 1 ("Confirm My Hostname")', selector: sel };
     }
   }
-  return false;
-}
 
-/** Vérifie si on est sur la page d'upsell "Before Confirming your Hostname" (bouton "No thanks, just renew my free hostname" ou "Confirm My Hostname") */
-async function isOnRenewUpsellPage(p) {
-  const selectors = [
-    'a:has-text("Confirm My Hostname")',
-    'button:has-text("Confirm My Hostname")',
-    'a:has-text("No thanks, just renew my free hostname")',
-    'button:has-text("No thanks, just renew my free hostname")',
-    '*:has-text("No thanks, just renew my free hostname")',
-    'text="No thanks, just renew my free hostname"',
-    'text="Your Action Required: Confirm Your Hostname"'
-  ];
-  for (const sel of selectors) {
-    try {
-      const visible = await p
-        .locator(sel)
-        .first()
-        .isVisible({ timeout: 3000 })
-        .catch(() => false);
-      if (visible) return true;
-    } catch {
-      /* continuer */
+  // Test CAS 2
+  for (const sel of cas2Selectors) {
+    if (await p.locator(sel).first().isVisible({ timeout: 2000 }).catch(() => false)) {
+      return { caseId: 2, name: 'CAS 2 ("No thanks, just renew my free hostname")', selector: sel };
     }
   }
-  return false;
+
+  // Test CAS 3
+  for (const sel of cas3Selectors) {
+    if (await p.locator(sel).first().isVisible({ timeout: 2000 }).catch(() => false)) {
+      return { caseId: 3, name: 'CAS 3 ("Confirm your hostname now")', selector: sel };
+    }
+  }
+
+  return { caseId: 0, name: 'CAS 0 (Page captcha directe)', selector: null };
 }
 
-/** Clique sur "Confirm My Hostname" ou "No thanks, just renew my free hostname" de façon humaine */
-async function clickRenewButton(p) {
-  const renewSelectors = [
-    'a:has-text("Confirm My Hostname")',
-    'button:has-text("Confirm My Hostname")',
-    'a:has-text("No thanks, just renew my free hostname")',
-    'button:has-text("No thanks, just renew my free hostname")',
-    '*:has-text("No thanks, just renew my free hostname")',
-  ];
+/** Clique de manière humaine sur le bouton détecté de la 1ère page */
+async function clickFirstPageButton(p, pageCase) {
+  const selectorsMap = {
+    1: ['a:has-text("Confirm My Hostname")', 'button:has-text("Confirm My Hostname")'],
+    2: [
+      'a:has-text("No thanks, just renew my free hostname")',
+      'button:has-text("No thanks, just renew my free hostname")',
+      '*:has-text("No thanks, just renew my free hostname")',
+    ],
+    3: [
+      'button:has-text("Confirm your hostname now")',
+      'a:has-text("Confirm your hostname now")',
+      'input[value*="Confirm your hostname"]',
+      'button:has-text("Confirm")',
+      'input[type="submit"]',
+    ],
+  };
 
-  for (const sel of renewSelectors) {
+  const selectors = selectorsMap[pageCase.caseId] || [];
+
+  for (const sel of selectors) {
     try {
       const btn = p.locator(sel).first();
       const visible = await btn.isVisible({ timeout: 3000 }).catch(() => false);
       if (!visible) continue;
 
-      console.log(`✅ Bouton renew/confirm trouvé : "${sel}"`);
+      console.log(`✅ Bouton trouvé pour ${pageCase.name} : "${sel}"`);
       const btnBox = await btn.boundingBox().catch(() => null);
       if (btnBox) {
         await humanMouseMove(p, btnBox.x - 100, btnBox.y - 30);
         await randomDelay(400, 800);
-        await humanMouseMove(
-          p,
-          btnBox.x + btnBox.width / 2,
-          btnBox.y + btnBox.height / 2,
-        );
+        await humanMouseMove(p, btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
         await randomDelay(200, 400);
       }
       await humanClick(p, btn);
-      console.log('🖱️  Bouton de confirmation cliqué !');
+      console.log(`🖱️ Clic réussi sur ${pageCase.name} !`);
       return true;
     } catch {
-      /* prochain */
-    }
-  }
-  return false;
-}
-
-/** Clique sur "Confirm your hostname now" de façon humaine */
-async function clickConfirmButton(p) {
-  const confirmSelectors = [
-    'button:has-text("Confirm your hostname now")',
-    'input[value*="Confirm your hostname"]',
-    'a:has-text("Confirm your hostname")',
-    'button:has-text("Confirm")',
-    'input[type="submit"]',
-    'button[type="submit"]',
-  ];
-
-  for (const sel of confirmSelectors) {
-    try {
-      const btn = p.locator(sel).first();
-      const visible = await btn.isVisible({ timeout: 3000 }).catch(() => false);
-      if (!visible) continue;
-
-      console.log(`✅ Bouton confirm trouvé : "${sel}"`);
-      const btnBox = await btn.boundingBox().catch(() => null);
-      if (btnBox) {
-        // Approche humaine en 2 mouvements
-        await humanMouseMove(p, btnBox.x - 120, btnBox.y - 40);
-        await randomDelay(400, 800);
-        await humanMouseMove(
-          p,
-          btnBox.x + btnBox.width / 2,
-          btnBox.y + btnBox.height / 2,
-        );
-        await randomDelay(200, 400);
-      }
-      await humanClick(p, btn);
-      console.log('🖱️  "Confirm your hostname now" cliqué !');
-      return true;
-    } catch {
-      /* prochain */
+      /* essayer le suivant */
     }
   }
   return false;
@@ -773,95 +725,66 @@ app.post("/confirm-noip", async (req, res) => {
     console.log(`\n🤖 confirm-noip démarré sur : ${p.url()}`);
 
     await p.waitForLoadState("domcontentloaded");
-
     await randomDelay(1800, 3000);
 
-    const onRenewUpsellPage = await isOnRenewUpsellPage(p);
-
-    const onConfirmPage = !onRenewUpsellPage && (await isOnConfirmPage(p));
+    // Détection automatique de l'un des 3 CAS
+    const pageCase = await detectFirstPageCase(p);
+    console.log(`\n🔍 Détection de la page : ${pageCase.name}`);
 
     let captcha1Solved = false;
     let page1Submitted = false;
     let captcha2Solved = false;
     let page2Submitted = false;
 
-    if (onRenewUpsellPage) {
-      console.log("\n━━━━━━ CAS C : Page Upsell ━━━━━━");
+    if (pageCase.caseId !== 0) {
+      // ──────────────────────────────────────────────────
+      // CAS 1, 2 ou 3 : Bouton à cliquer sur la 1ère page
+      // ──────────────────────────────────────────────────
+      console.log(`\n━━━━━━ ${pageCase.name} ━━━━━━`);
 
-      page1Submitted = await clickRenewButton(p);
-
-      console.log("\n⏳ Attente de la navigation vers la page de captcha...");
-
-      await p
-        .waitForNavigation({
-          waitUntil: "domcontentloaded",
-          timeout: 15000,
-        })
-        .catch(() => { });
-
-      await randomDelay(1500, 2500);
-
-      console.log("\n━━━━━━ PAGE CAPTCHA ━━━━━━");
-
-      captcha2Solved = await solveCaptchaOnPage(p, "AFTER_RENEW");
-
-      await randomDelay(800, 1500);
-
-      page2Submitted = await clickSubmitButton(p, "AFTER_RENEW");
-    } else if (onConfirmPage) {
-      console.log("\n━━━━━━ CAS A : Page Confirm hostname ━━━━━━");
-
+      // Si présent sur la 1ère page, tenter aussi la résolution hCAPTCHA au besoin
       captcha1Solved = await solveCaptchaOnPage(p, "PAGE1");
-
       await randomDelay(800, 1500);
 
-      page1Submitted = await clickConfirmButton(p);
+      // Clic sur le bouton de la 1ère page (Confirm My Hostname / No thanks... / Confirm your hostname now)
+      page1Submitted = await clickFirstPageButton(p, pageCase);
 
       if (!page1Submitted) {
-        console.log("⚠️ Bouton confirm non trouvé – tentative Enter...");
-
-        await p.keyboard.press("Enter");
+        console.log("⚠️ Bouton principal non cliqué – tentative touche Enter...");
+        await p.keyboard.press("Enter").catch(() => {});
       }
 
-      console.log("\n⏳ Attente de la redirect...");
-
-      const urlAvantConfirm = p.url();
-
+      console.log("\n⏳ Attente de la redirection vers la page de captcha...");
+      const urlAvant = p.url();
       await p
-        .waitForNavigation({
-          waitUntil: "domcontentloaded",
-          timeout: 15000,
-        })
-        .catch(() => { });
-
+        .waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 })
+        .catch(() => {});
       await randomDelay(1500, 2500);
 
-      const urlApresConfirm = p.url();
-
-      if (urlApresConfirm !== urlAvantConfirm) {
-        console.log(`📍 Redirect détectée → ${urlApresConfirm}`);
-      } else {
-        console.log(`📍 Même URL : ${urlApresConfirm}`);
+      if (p.url() !== urlAvant) {
+        console.log(`📍 Redirection vers : ${p.url()}`);
       }
 
-      console.log("\n━━━━━━ PAGE 2 : Captcha ━━━━━━");
-
+      // Étape 2 : Résolution du Captcha sur la page suivante
+      console.log("\n━━━━━━ PAGE CAPTCHA (PAGE 2) ━━━━━━");
       captcha2Solved = await solveCaptchaOnPage(p, "PAGE2");
-
       await randomDelay(800, 1500);
 
       page2Submitted = await clickSubmitButton(p, "PAGE2");
+
     } else {
-      console.log("\n━━━━━━ CAS B : Page captcha directe ━━━━━━");
+      // ──────────────────────────────────────────────────
+      // CAS 0 : Arrivée directe sur la page de Captcha
+      // ──────────────────────────────────────────────────
+      console.log("\n━━━━━━ CAS 0 : Page captcha directe ━━━━━━");
 
       captcha2Solved = await solveCaptchaOnPage(p, "DIRECT");
-
       await randomDelay(800, 1500);
 
       page2Submitted = await clickSubmitButton(p, "DIRECT");
 
       if (!page2Submitted) {
-        console.log("ℹ️ Aucun bouton submit.");
+        console.log("ℹ️ Aucun bouton submit supplémentaire.");
       }
     }
 
@@ -871,7 +794,7 @@ app.post("/confirm-noip", async (req, res) => {
 
     await randomDelay(3000, 5000);
 
-    await p.waitForLoadState("domcontentloaded").catch(() => { });
+    await p.waitForLoadState("domcontentloaded").catch(() => {});
 
     const isUpdateSuccessfulHeader = await p
       .locator('text="Update Successful"')
@@ -931,7 +854,8 @@ app.post("/confirm-noip", async (req, res) => {
     console.log(`   Page Captcha – Submit: ${page2Submitted ? "✅" : "ℹ️"}`);
 
     console.log(
-      `   Vérification Succès: ${success ? "✅ UPDATE SUCCESSFUL" : "⚠️ Non confirmé"
+      `   Vérification Succès: ${
+        success ? "✅ UPDATE SUCCESSFUL" : "⚠️ Non confirmé"
       }`,
     );
 
@@ -943,13 +867,13 @@ app.post("/confirm-noip", async (req, res) => {
 
       page1: onRenewUpsellPage
         ? {
-          renewClicked: page1Submitted,
-        }
+            renewClicked: page1Submitted,
+          }
         : onConfirmPage
           ? {
-            captchaSolved: captcha1Solved,
-            confirmClicked: page1Submitted,
-          }
+              captchaSolved: captcha1Solved,
+              confirmClicked: page1Submitted,
+            }
           : null,
 
       page2: {
