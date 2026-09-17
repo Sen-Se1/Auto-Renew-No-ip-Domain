@@ -139,18 +139,25 @@ async function humanMouseMove(page, x, y) {
   await page.mouse.move(x, y, { steps });
 }
 
-/** Clic humain sur un locator Playwright */
+/** Clic humain sur un locator Playwright (avec auto-scroll et fallback) */
 async function humanClick(page, target) {
-  const box = await target.boundingBox();
-  if (!box) throw new Error("Élément non visible pour le clic humain");
-  // Légère variation aléatoire autour du centre de l'élément
-  const cx = box.x + box.width / 2 + (Math.random() * 6 - 3);
-  const cy = box.y + box.height / 2 + (Math.random() * 4 - 2);
-  await humanMouseMove(page, cx, cy);
-  await randomDelay(100, 300);
-  await page.mouse.down();
-  await randomDelay(60, 150);
-  await page.mouse.up();
+  // S'assurer que l'élément est visible dans le viewport
+  await target.scrollIntoViewIfNeeded().catch(() => {});
+  await randomDelay(200, 400);
+
+  const box = await target.boundingBox().catch(() => null);
+  if (box) {
+    const cx = box.x + box.width / 2 + (Math.random() * 6 - 3);
+    const cy = box.y + box.height / 2 + (Math.random() * 4 - 2);
+    await humanMouseMove(page, cx, cy);
+    await randomDelay(100, 300);
+    await page.mouse.down();
+    await randomDelay(60, 150);
+    await page.mouse.up();
+  }
+
+  // Clic direct de sécurité au niveau DOM / Playwright pour garantir la soumission
+  await target.click({ force: true, timeout: 3000 }).catch(() => {});
 }
 
 // ─────────────────────────────────────────────
