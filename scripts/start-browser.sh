@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CHROMIUM_NAME="chromium"
+CHROMIUM_NAME="chromium-noip"
 CDP_NAME="chromium-cdp"
 
 CHROMIUM_IMAGE="linuxserver/chromium:version-6ae43f81@sha256:da269d40b655eb25ca0cd17c87f2e8e34b5b21f3e3eb14143746e40c62cb6951"
